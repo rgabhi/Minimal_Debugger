@@ -9,21 +9,6 @@
 
 using namespace std;
 
-long original_data;
-void* addr = (void*)0x401126;
-
-
-void set_breakpoint(pid_t pid,void *addr){
-
-    original_data = ptrace(PTRACE_PEEKTEXT,pid,addr,NULL);
-
-    long data_with_trap = ( original_data & ~0xFF) | 0xCC;
-
-    ptrace(PTRACE_POKETEXT,pid,addr,data_with_trap);
-
-    cout<<"Breakpoint set at "<<addr<<" .Replaced byte with 0xCC.\n"<<endl;
-
-}
 
 
 int main(int argc, char *argv[]) {
@@ -60,9 +45,7 @@ int main(int argc, char *argv[]) {
             cout << "Enter memory address to break at (e.g., 401126): 0x";
             cin >> hex >> addr_input;  // Read hex input
 
-            // --- NEW: Set the Breakpoint ---
-            set_breakpoint(p1, (void*)addr_input);
-
+   
             // --- NEW: Continue Execution ---
             // "Let the child run until it hits the 0xCC trap"
             ptrace(PTRACE_CONT, p1, 0, 0);
