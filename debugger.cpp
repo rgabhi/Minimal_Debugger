@@ -5,64 +5,72 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <iostream>
+#include <sys/user.h>
+#include <map>
+#include <iomanip> // For nice hex formatting
 
+#include "handle_command.hpp"
 
 using namespace std;
+
+
+// Map to store: Address -> Original Instruction (8 bytes)
+map<void*, long> active_breakpoints;
 
 
 
 int main(int argc, char *argv[]) {
   
-    if(argc<2){
-        cout<<"Please enter more arguments"<<endl;
+    if(argc < 2){
+        cout << "Usage: ./debugger <program>" << endl;
         exit(0);
     }
 
-    pid_t p1=fork();
+    pid_t p1 = fork();
 
-    if(p1==0){
-        //child
-        //PTRACE_TRACEME --> Child tells kernel: "My parent will debug me."
-        ptrace(PTRACE_TRACEME,0,NULL,NULL);
+    if(p1 == 0){
+        // Child
 
-        execl(argv[1],argv[1],NULL);
+        //Child tells kernel: "My parent will debug me."
 
-    }else{
-        //parent
+        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 
+        //execl() replaces the current running process 
+        //image with the executable file you give it (like ./target).
+
+        execl(argv[1], argv[1], NULL);
+
+    } else {
+
+        // Parent
         int status;
 
-// WIFSTOPPED(status)
-// Returns true (non-zero) if the child has stopped due to a signal.
+        // Wait for the child to stop at the start 
+        waitpid(p1, &status, 0);
+        cout << "Debugger started. Child paused at entry." << endl;
 
-    waitpid(p1,&status,0);
+        string command;
+        while(true) {
+            cout << "(my_debugger) > ";
+            cin >> command;
 
-    if(WIFSTOPPED(status)){
-
-        cout<<"Debugger started \n";
-
-        long addr_input;
-            cout << "Enter memory address to break at (e.g., 401126): 0x";
-            cin >> hex >> addr_input;  // Read hex input
-
-   
-            // --- NEW: Continue Execution ---
-            // "Let the child run until it hits the 0xCC trap"
-            ptrace(PTRACE_CONT, p1, 0, 0);
-
-
-    }
-
-// WIFEXITED(status)
-// Returns true (non-zero) if the child terminated normally .
-
-        if(WIFEXITED(status)){
-            cout<<"Child exited normally"<<endl;
+            if (command == "quit") {
+                cout << "Terminating debugger and child process..." << endl;
+            
+            // Kill the child hard
+            kill(p1, SIGKILL);
+            
+            // Wait for it to die (clean up zombie)
+            int status;
+            waitpid(p1, &status, 0);
+            
+            cout << "Child process killed. Goodbye!" << endl;
+            break; 
+            } 
+            else {
+                handle_command(p1, command);
+            }
         }
-
-
     }
-
-    
-
+    return 0;
 }
