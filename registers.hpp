@@ -16,6 +16,9 @@ uint64_t get_pc(pid_t pid);
 // set instruction ptr
 void set_pc(pid_t pid, uint64_t pc);
 
+// to Inspect CPU registers at breakpoints
+void dump_registers(pid_t pid);
+
 #endif
 
 

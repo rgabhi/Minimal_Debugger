@@ -2,6 +2,7 @@
 #include <sys/ptrace.h>
 #include <sys/user.h>
 #include <iostream>
+#include <iomanip>
 #include <algorithm>
 
 // map our request to user_req_struct
@@ -28,4 +29,9 @@ void set_pc(pid_t pid, uint64_t pc){
     //write back the modified reg
     ptrace(PTRACE_SETREGS, pid, nullptr, &regs);
 
+}
+
+
+void dump_registers(pid_t pid) {
+    // todo - pratik
 }
