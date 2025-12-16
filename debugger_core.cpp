@@ -9,6 +9,8 @@
 #include <vector>
 #include <cctype> // for std::isprint
 
+#include "colors.hpp"
+
 Debugger::Debugger(std::string prog_name, pid_t pid)
     : m_prog_name(prog_name), m_pid(pid){}
 
@@ -19,7 +21,7 @@ void Debugger::run(){
     
     // prompt loop
     while(true){
-        std::cout << "dbg> ";
+        std::cout <<BLUE<< "dbg> "<<RESET;
         std::string input;
         if(!std::getline(std::cin, input)) break;
         if(input.empty()) continue;
@@ -93,12 +95,12 @@ void Debugger::handle_cmd(const std::string& line){
         }
     }
     else{
-        std::cerr << "Unknown cmd!" << std::endl;
+        std::cerr << RED<<"Unknown cmd!" << std::endl;
     }
 }
 
 void Debugger::set_breakpoint_(std::intptr_t addr){
-    std::cout << "Setting breakpoint at 0x" << std::hex << addr << std::dec << std::endl;
+    std::cout <<GREEN<< "Setting breakpoint at 0x" << std::hex << addr << std::dec << std::endl;
     
     // Create the breakpoint object
     BreakPoint bp(m_pid, addr);
@@ -118,9 +120,9 @@ void Debugger::remove_breakpoint_(std::intptr_t addr) {
             bp.disable();
         }
         m_breakpoints.erase(addr);
-        std::cout << "Breakpoint removed from 0x" << std::hex << addr << std::dec << std::endl;
+        std::cout << GREEN<<"Breakpoint removed from 0x" << std::hex << addr << std::dec << std::endl;
     } else {
-        std::cerr << "No breakpoint found at 0x" << std::hex << addr << std::dec << std::endl;
+        std::cerr <<YELLOW<< "No breakpoint found at 0x" << std::hex << addr << std::dec << std::endl;
     }
 }
 
@@ -137,7 +139,7 @@ void Debugger::single_step() {
 
     if (m_breakpoints.count(current_pc)) {
         step_over_();
-        std::cout << "Stepped to 0x" << std::hex << get_pc(m_pid) << std::dec << std::endl;
+        std::cout << GREEN<<"Stepped to 0x" << std::hex << get_pc(m_pid) << std::dec << std::endl;
     } 
     else {
         ptrace(PTRACE_SINGLESTEP, m_pid, 0, 0);
@@ -151,14 +153,14 @@ void Debugger::wait_for_sig(){
     m_last_wait_status = wait_status;
 
     if(WIFEXITED(wait_status)){
-        std::cout << "Child process exited with code: " << WEXITSTATUS(wait_status) << std::endl; 
+        std::cout << YELLOW<<"Child process exited with code: " << WEXITSTATUS(wait_status) << std::endl; 
         exit(0);
     }
     else if(WIFSTOPPED(wait_status)){
         int sig = WSTOPSIG(wait_status);
         
         // only print if it's NOT a SIGTRAP (step) to keep output clean, 
-        std::cout << "Process stopped. Signal: " << strsignal(sig) << " (" << sig << ")" << std::endl;
+        std::cout <<YELLOW<< "Process stopped. Signal: " << strsignal(sig) << " (" << sig << ")" << std::endl;
 
         if(sig == SIGTRAP){
             // check if hit a breakpoint
@@ -167,7 +169,7 @@ void Debugger::wait_for_sig(){
             std::intptr_t bp_addr = current_pc - 1;
             
             if(m_breakpoints.count(bp_addr)){
-                std::cout << "Hit breakpoint at 0x" << std::hex << bp_addr << std::dec << std::endl;
+                std::cout << YELLOW<<"Hit breakpoint at 0x" << std::hex << bp_addr << std::dec << std::endl;
                 // rewind instruction ptr
                 set_pc(m_pid, bp_addr); // Rewind
             } 

@@ -5,6 +5,7 @@
 // #include <sys/types.h> // pid_t
 
 #include "debugger_core.hpp"
+#include "colors.hpp"
 
 
 using namespace std;
@@ -19,8 +20,9 @@ int main(int argc, char* argv[]) {
 
     // fork process
     pid_t pid = fork();
-
+    
     if(pid == 0){
+        // draw_ui();
         // child preocess
         //PTRACE_TRACEME allows parent to trace this process.
         // it tells kernel that my paretnt is going to control me.
@@ -31,12 +33,13 @@ int main(int argc, char* argv[]) {
         execl(prog_name.c_str(), prog_name.c_str(), nullptr);
 
         // if execl returned means there's an error
-        std::cerr <<"Error: "<< prog_name <<" failed." << endl;
+        std::cerr <<RED<<"Error: "<< prog_name <<" failed." << endl;
         return 1;
     }
     else if(pid >= 1){
+        // draw_ui();
         // parent process -- Debugger
-        std::cout << "Debugger started...\nChild PID: " << pid << std::endl;
+        std::cout << GREEN<<"Debugger started...\nChild PID: " << pid << std::endl;
         Debugger  dbg(prog_name, pid);
         dbg.run();
     }    
