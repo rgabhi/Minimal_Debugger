@@ -26,7 +26,8 @@ int main(int argc, char* argv[]) {
         // it tells kernel that my paretnt is going to control me.
         ptrace(PTRACE_TRACEME, 0, 0, 0);
 
-        //replace this process image with target program.
+         //execl() replaces the current running process 
+        //image with the executable file you give it (like ./target).
         execl(prog_name.c_str(), prog_name.c_str(), nullptr);
 
         // if execl returned means there's an error

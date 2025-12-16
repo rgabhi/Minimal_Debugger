@@ -7,14 +7,21 @@ BreakPoint::BreakPoint(pid_t pid, std::intptr_t addr)
     :m_pid(pid), m_addr(addr), m_enabled(false), m_saved_data(0){}
 
 void BreakPoint::enable(){
-    // read word(8 bytes) at the address
-    //PTRACE_PEEKTEXT reads from the text (code) segment
+   
+      //Null since we just want to read data , when writing we require data to be passed.
+
+    //PTRACE_PEEKTEXT :   It tells the kernel: "Go to the child process (pid), 
+    // look at address addr, and copy 8 bytes of data back to me."
+
     long data = ptrace(PTRACE_PEEKTEXT, m_pid, m_addr, nullptr);
 
     // save og bottom byte
     m_saved_data = static_cast<uint8_t>(data &0xFF);
 
     // mask out bottom byte and replace it with 0xCC (INT 3)
+
+    // since ptrace reads 8-Byte of data but We want only first Byte to change to 0xcc .So CPU will see it as a trap.
+    //So data does not become corrupted
     uint64_t int3 = 0xCC;
     uint64_t data_with_int3 = ((data & ~0xFF) | int3);
 
