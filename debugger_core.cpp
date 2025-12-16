@@ -60,9 +60,20 @@ void Debugger::handle_cmd(const std::string& line){
         print_status();
     }
     else if(cmd == "q" || cmd == "quit"){
-        std::cout << "exiting..." << std::endl;
-        kill(m_pid, SIGKILL);
-        exit(0);
+        // std::cout << "exiting..." << std::endl;
+        // kill(m_pid, SIGKILL);
+        // exit(0);
+     
+            // Kill the child hard
+            kill(m_pid, SIGKILL);
+            
+            // Wait for it to die (clean up zombie)
+            int status;
+            waitpid(m_pid, &status, 0);
+            
+            std::cout << "Child process killed. Goodbye!" << std::endl;  
+            exit(0);
+        
     }
     else if (cmd == "x" || cmd == "examine") {
         std::string addr_str;
