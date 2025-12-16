@@ -1,7 +1,7 @@
 #include "breakpoint.hpp"
 #include <sys/ptrace.h>
 #include <iostream>
-
+#include "colors.hpp"
 
 BreakPoint::BreakPoint(pid_t pid, std::intptr_t addr)
     :m_pid(pid), m_addr(addr), m_enabled(false), m_saved_data(0){}
@@ -30,7 +30,7 @@ void BreakPoint::enable(){
     ptrace(PTRACE_POKETEXT,m_pid, m_addr, data_with_int3);
 
     m_enabled = true;
-    std::cout << "breakpoint set at 0x"<<std::hex<<m_addr<<std::dec<<std::endl;
+    std::cout << GREEN<<"breakpoint set at 0x"<<std::hex<<m_addr<<std::dec<<std::endl;
 
 }
 
@@ -41,7 +41,7 @@ void BreakPoint::disable(){
     //write back
     ptrace(PTRACE_POKETEXT, m_pid, m_addr, restored_data);
     m_enabled=false;
-    std::cout<<"breakpoint removed from 0x"<<std::hex<<m_addr<<std::dec<<std::endl;
+    std::cout<<GREEN<<"breakpoint removed from 0x"<<std::hex<<m_addr<<std::dec<<std::endl;
 }
 
 bool BreakPoint::is_enabled()const {return m_enabled;}
