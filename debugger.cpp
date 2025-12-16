@@ -1,76 +1,46 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/ptrace.h>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <stdlib.h>
 #include <iostream>
-#include <sys/user.h>
-#include <map>
-#include <iomanip> // For nice hex formatting
+#include <unistd.h> // fork, execl
+#include <sys/ptrace.h> // p_trace
+// #include <sys/wait.h> // waitpid
+// #include <sys/types.h> // pid_t
 
-#include "handle_command.hpp"
+#include "debugger_core.hpp"
+
 
 using namespace std;
 
 
-// Map to store: Address -> Original Instruction (8 bytes)
-map<void*, long> active_breakpoints;
-
-
-
-int main(int argc, char *argv[]) {
-  
-    if(argc < 2){
-        cout << "Usage: ./debugger <program>" << endl;
-        exit(0);
-    }
-
-    pid_t p1 = fork();
-
-    if(p1 == 0){
-        // Child
-
-        //Child tells kernel: "My parent will debug me."
-
-        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-
-        //execl() replaces the current running process 
-        //image with the executable file you give it (like ./target).
-
-        execl(argv[1], argv[1], NULL);
-
     } else {
 
-        // Parent
-        int status;
-
-        // Wait for the child to stop at the start 
-        waitpid(p1, &status, 0);
-        cout << "Debugger started. Child paused at entry." << endl;
-
-        string command;
-        while(true) {
-            cout << "(my_debugger) > ";
-            cin >> command;
-
-            if (command == "quit") {
-                cout << "Terminating debugger and child process..." << endl;
-            
-            // Kill the child hard
-            kill(p1, SIGKILL);
-            
-            // Wait for it to die (clean up zombie)
-            int status;
-            waitpid(p1, &status, 0);
-            
-            cout << "Child process killed. Goodbye!" << endl;
-            break; 
-            } 
-            else {
-                handle_command(p1, command);
-            }
-        }
+int main(int argc, char* argv[]) {
+    if(argc < 2){
+        std::cerr << "Usage: " <<argv[0] << "[program]" << endl;
+        return 1;
     }
+    std::string prog_name = argv[1];
+
+    // fork process
+    pid_t pid = fork();
+
+    if(pid == 0){
+        // child preocess
+        //PTRACE_TRACEME allows parent to trace this process.
+        // it tells kernel that my paretnt is going to control me.
+        ptrace(PTRACE_TRACEME, 0, 0, 0);
+
+        //replace this process image with target program.
+        execl(prog_name.c_str(), prog_name.c_str(), nullptr);
+
+        // if execl returned means there's an error
+        std::cerr <<"Error: "<< prog_name <<" failed." << endl;
+        return 1;
+    }
+    else if(pid >= 1){
+        // parent process -- Debugger
+        std::cout << "Debugger started...\nChild PID: " << pid << std::endl;
+        Debugger  dbg(prog_name, pid);
+        dbg.run();
+    }    
     return 0;
 }
+
